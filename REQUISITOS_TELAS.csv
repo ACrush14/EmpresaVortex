@@ -1,0 +1,39 @@
+Numero,Item,Descricao,Prioridade
+1,TELA: Landing Page (Web/Desktop),"Pagina publica de apresentacao do projeto, vitrine e estatisticas simuladas",Obrigatorio
+1.1,Hero / apresentacao da proposta,"Explica a proposta de economia circular no campus (o que e, para quem, como funciona)",Obrigatorio
+1.2,Estatisticas simuladas do sistema,"Numeros de destaque, ex: itens recirculados, doacoes no mes, usuarios ativos",Obrigatorio
+1.3,Vitrine publica dos ultimos itens,"Grid com os anuncios mais recentes cadastrados no sistema",Obrigatorio
+1.4,Filtro por categoria,"Filtro basico (Livros, Engenharia, Computacao, etc.) aplicado sobre a vitrine",Obrigatorio
+1.5,CTA Anunciar item,"Botao de chamada para acao que leva ao formulario de anuncio",Obrigatorio
+1.6,CTA Buscar itens,"Botao de chamada para acao que leva a vitrine/busca completa",Obrigatorio
+1.7,Prompt/CTA Instalar app,"Convite para instalar o PWA na tela inicial do dispositivo",Bonus (polish)
+1.8,Layout responsivo,"Landing rica no desktop que se adapta fluidamente ao mobile",Obrigatorio
+2,TELA: Vitrine / Busca de Itens,"Listagem completa dos itens, acessada a partir da Landing ou do fluxo mobile",Obrigatorio
+2.1,Grid/lista de cards de itens,"Cada card mostra imagem, titulo, categoria e preco ou doacao",Obrigatorio
+2.2,Filtro por categoria,"Mesmo filtro da Landing, aplicado na listagem completa",Obrigatorio
+2.3,Busca por palavra-chave,"Campo de busca textual sobre titulo/descricao dos itens",Bonus
+2.4,Indicador doacao vs. venda no card,"Selo ou destaque visual diferenciando item gratuito de item a venda",Obrigatorio
+2.5,Clique no card abre Detalhe do Item,"Navegacao para a tela de Detalhe do Item",Obrigatorio
+3,TELA: Detalhe do Item,"Visualizacao completa de um anuncio especifico",Obrigatorio
+3.1,Imagem titulo descricao e categoria,"Exibicao completa dos dados do item",Obrigatorio
+3.2,Preco ou indicacao Doacao,"Deixa claro se o item e gratuito ou tem valor",Obrigatorio
+3.3,Contato do anunciante,"WhatsApp ou e-mail informado por quem anunciou, para combinar a entrega fora do app",Obrigatorio (decisao de produto)
+3.4,Botao voltar a vitrine,"Navegacao de retorno para a listagem",Obrigatorio
+4,TELA: Formulario de Anuncio (Novo Item) - PWA mobile,"Formulario para o usuario cadastrar um novo item",Obrigatorio
+4.1,Campo Titulo,"Nome do item anunciado",Obrigatorio
+4.2,Campo Descricao,"Texto livre descrevendo o item",Obrigatorio
+4.3,Selecao de Categoria,"Lista pre-definida de categorias (Livros, Engenharia, Computacao, etc.)",Obrigatorio
+4.4,Toggle E doacao / Campo Preco,"Alterna entre item gratuito e item com preco definido",Obrigatorio
+4.5,Campo URL da imagem,"URL simulada de imagem do item (sem upload real de arquivo)",Obrigatorio
+4.6,Campo de contato do anunciante,"WhatsApp ou e-mail exibido depois na tela de Detalhe do Item",Obrigatorio (decisao de produto)
+4.7,Validacao de campos obrigatorios,"Mensagens de erro claras quando campos obrigatorios nao sao preenchidos",Bonus (camada 1)
+4.8,Botao Publicar,"Envia POST /items e confirma a criacao do anuncio",Obrigatorio
+5,TELA: Meus Anuncios - PWA mobile,"Lista dos itens cadastrados pelo proprio usuario",Obrigatorio
+5.1,Lista dos itens do usuario,"Todos os anuncios criados pelo usuario logado/identificado",Obrigatorio
+5.2,Botao excluir anuncio,"Envia DELETE /items/:id e remove o item da vitrine publica",Obrigatorio
+5.3,Estado vazio,"Mensagem exibida quando o usuario ainda nao tem nenhum anuncio",Obrigatorio
+5.4,Atalho para criar novo anuncio,"Leva direto ao Formulario de Anuncio (tela 4)",Obrigatorio
+6,TELA: Identificacao / Autenticacao,"Fluxo transversal que identifica quem esta usando o app",Bonus (camada 2)
+6.1,Campo de identificacao simples ou login,"Nome do usuario, ou login com JWT dependendo do nivel de bonus escolhido",Bonus (camada 2)
+6.2,Persistencia de sessao,"Guarda a identificacao em localStorage ou token JWT entre visitas",Bonus (camada 2)
+6.3,Associacao de anuncios ao usuario,"Cada item criado fica vinculado a quem o cadastrou, habilitando a tela 5",Bonus (camada 2)
