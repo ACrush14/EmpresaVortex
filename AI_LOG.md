@@ -39,3 +39,39 @@ Ao configurar o driver adapter do Prisma 7 para SQLite, a primeira tentativa foi
 **Lição:** ao seguir uma recomendação "padrão" de uma skill/documentação, vale checar se ela assume um ambiente de build completo — em máquinas Windows sem Visual Studio, adapters que dependem de compilação nativa (`better-sqlite3`, `bcrypt`, etc.) são um ponto de atrito real, não só teórico.
 
 **Resultado:** backend funcional — CRUD completo de `/items`, persistência SQLite, validação de campos. Documentado em [README.md](README.md).
+
+### Integração do frontend com a API real
+
+**Prompt real:** *"Siga por esse caminho, por favor. Lembrando de ir atualizando o readme.md e o ai_log.md"* — em resposta à sugestão de trocar os dados mockados do frontend por chamadas reais à API.
+
+Trabalho: criado `frontend/src/lib/api.ts` (cliente HTTP único, com `ApiError` carregando os `issues` do Zod para exibir na UI), e as 5 telas que dependiam de dados passaram a consumir a API — `LandingPage` e `Vitrine` via `GET /items`, `ItemDetail` via `GET /items/:id`, `AdForm` via `POST /items`, `MyAds` via `GET /items?ownerId=` + `DELETE /items/:id`. `mockItems.ts` foi removido por ficar sem nenhum uso.
+
+**Decisão de produto tomada sem perguntar antes (registrada aqui por transparência):** o schema do backend exige `ownerId` em todo item, mas a tela de Identificação (Camada 2, bônus) ainda é só um formulário sem persistência. Para o CRUD fechar de ponta a ponta sem esperar pela Camada 2, criei `frontend/src/lib/currentUser.ts` — um id anônimo gerado uma vez por navegador e salvo em `localStorage`. Não é autenticação, é só o mínimo para "Meus Anúncios" fazer sentido antes do login de verdade existir.
+
+**Também acrescentado ao backend:** `GET /items` passou a aceitar `?ownerId=` além de `?category=` (antes só filtrava categoria) — necessário para "Meus Anúncios" buscar só os itens do usuário no servidor, em vez de trazer tudo e filtrar no cliente.
+
+**Verificação manual do próprio usuário:** depois de eu subir os servidores locais, o candidato cadastrou um anúncio de teste ("Padrasto") pela UI e perguntou *"Acabei de fazer um anúncio do cadastro, ele está adicionando no Backend?"* — confirmei consultando `GET /items` direto e mostrando o registro salvo (`ownerId` gerado automaticamente, timestamp real). Esse é o tipo de checagem que evita aceitar "funciona" só porque a IA disse que funciona.
+
+**Verificação (Playwright):** `tsc -b` e `vite build` limpos nos dois lados; depois, teste de ponta a ponta em navegador de verdade (Playwright headless, já que `chromium-cli` não estava disponível neste ambiente) cobrindo: landing carregando itens da API, filtro de categoria na vitrine, criação de anúncio via formulário até redirecionar para "Meus Anúncios", e exclusão removendo o item da lista — sem erros no console em nenhum passo.
+
+### Validação do formulário (Camada 1)
+
+**Prompt real:** *"Faça a questão da validação para dar certo colocar no backend"* — depois de eu apontar, na pergunta "O que falta?", que a validação existia só como `required` do HTML5 + uma mensagem genérica no topo do formulário.
+
+Trabalho: mensagens do Zod (`backend/src/schemas/item.ts`) ficaram específicas por regra (`"Preço precisa ser maior que zero"`, `"Selecione uma categoria válida"`, etc.). No frontend, `AdForm.tsx` ganhou uma função `validate()` que roda antes de qualquer chamada à API — bloqueia o envio e mostra a mensagem embaixo do campo errado (borda vermelha + texto) em vez de deixar o navegador mostrar o balão de validação nativo. Se ainda assim o backend rejeitar (`400`), os `issues` da resposta são mapeados de volta pro campo certo via `issue.path[0]`, então o mesmo mecanismo de exibição cobre os dois casos.
+
+**Por que validar nos dois lados em vez de confiar só no cliente:** validação de cliente é só UX — qualquer um pode chamar `POST /items` direto (Postman, `curl`, outro frontend) pulando o React inteiro. Sem a validação do Zod, dados inválidos (preço negativo, categoria fora da lista) entrariam no banco. As mensagens do Zod foram escritas pra já servir de resposta amigável nesse caso, não só pra alimentar o formulário.
+
+**Verificação:** teste em navegador (Playwright) cobrindo 3 cenários — formulário vazio (4 campos acusam erro, não navega), venda com preço `0` e URL inválida (2 erros específicos), depois corrigido (publica e navega pra "Meus Anúncios"). Também validado direto na API via `curl` que categoria fora da lista e preço `0` voltam `400` com a mensagem nova.
+
+### Filtro na Landing + PWA (fechando o obrigatório)
+
+**Prompt real:** *"Faça isso, por favor"* — em resposta à sugestão de fechar os dois últimos itens do escopo obrigatório: filtro por categoria na Landing Page e o PWA (manifest + service worker).
+
+**Filtro na Landing:** só faltava reaproveitar o componente `CategoryFilter` (já existia, usado na Vitrine) dentro de `LandingPage.tsx`, e trocar o `fetchItems()` sem argumento por `fetchItems({ category })` quando uma categoria é selecionada. Sem novidade de arquitetura, só fechar um requisito (1.4) que tinha ficado pra trás na integração anterior.
+
+**PWA:** instalado `vite-plugin-pwa` com estratégia `generateSW` (gera o service worker automaticamente via Workbox — não escrevi nenhum `sw.js` na mão). O ponto que exigiu mais decisão foi o ícone: o projeto não tinha nenhuma arte própria pra usar no manifest (só um favicon genérico do template do Vite e uma sprite de ícones de UI). Desenhei um SVG simples (broto/folha, combinando com o emoji 🌱 já usado no cabeçalho e com o verde `emerald-600` do resto da UI) e precisei convertê-lo pra PNG nos tamanhos que o manifest e o iOS esperam (192, 512, 512 maskable, apple-touch-icon 180).
+
+**Decisão técnica (aprendendo com o erro do driver adapter de antes):** a conversão SVG→PNG normalmente seria feita com `sharp` ou `canvas`, mas ambos frequentemente dependem de compilação nativa — o mesmo tipo de problema que já tinha travado o `better-sqlite3` nesta máquina sem Visual Studio Build Tools. Usei `@resvg/resvg-js` em vez disso: é da mesma família de pacotes Rust com binário pré-compilado (como `esbuild`/`swc`), então instalou e rodou sem exigir nenhum toolchain — mesma lição de antes, aplicada preventivamente dessa vez em vez de descoberta por tentativa e erro.
+
+**Verificação:** o service worker só roda em build de produção, não no `npm run dev` — então rodei `npm run build` + `npm run preview` e testei com Playwright contra o build real: manifest.webmanifest acessível com nome/ícones/`display: standalone` corretos, service worker registrando e chegando a `activating`, e o filtro por categoria funcionando na Landing. **Não testado:** instalação num celular físico — o [PLANEJAMENTO.md](PLANEJAMENTO.md) já apontava esse risco (PWA no iOS é mais restrita), então fica como pendência explícita no README em vez de assumida como resolvida.

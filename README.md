@@ -15,10 +15,34 @@ Edital completo em [PS_Full_Stack.pdf](PS_Full_Stack.pdf). Contexto de planejame
 
 ```
 VortexFullStack/
-├── backend/     # API REST (Express + Prisma)
-├── frontend/    # React + Vite (PWA)
-└── README.md
+├── backend/               # API REST (Express + Prisma)
+├── frontend/              # React + Vite (PWA)
+├── README.md              # este arquivo — entrega final
+├── AI_LOG.md              # diário de bordo do uso de IA
+├── PLANEJAMENTO.md        # plano de trabalho (uso interno, não é entrega)
+├── REQUISITOS_TELAS.csv   # requisitos por tela
+└── historico.md           # resumo da conversa de planejamento fora do VS Code
 ```
+
+## Como rodar tudo (backend + frontend)
+
+Em dois terminais separados:
+
+```bash
+# terminal 1 — backend
+cd backend
+npm install
+npx prisma migrate dev
+npx tsx prisma/seed.ts
+npm run dev              # http://localhost:3333
+
+# terminal 2 — frontend
+cd frontend
+npm install
+npm run dev              # http://localhost:5173
+```
+
+Abra `http://localhost:5173` com o backend já no ar. Detalhes de cada lado abaixo.
 
 ## Backend
 
@@ -55,7 +79,7 @@ Categorias aceitas (validadas no Zod, `backend/src/schemas/item.ts`): `Livros`, 
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/items` | Lista itens. Aceita `?category=` para filtrar |
+| `GET` | `/items` | Lista itens. Aceita `?category=` e `?ownerId=` para filtrar (combináveis) |
 | `GET` | `/items/:id` | Detalhe de um item. `404` se não existir |
 | `POST` | `/items` | Cria um item. Corpo validado com Zod, `400` com lista de erros se inválido |
 | `DELETE` | `/items/:id` | Remove um item. `404` se não existir, `204` se removido |
@@ -74,15 +98,40 @@ npm install
 npm run dev   # http://localhost:5173
 ```
 
+Por padrão o frontend chama a API em `http://localhost:3333` (ver `frontend/.env`, variável `VITE_API_URL`). Rode o backend antes ou junto do frontend para as telas carregarem dados de verdade.
+
+Para testar o PWA (manifest + service worker, que não rodam em `npm run dev`): `npm run build && npm run preview`.
+
 ### Telas implementadas
 
-Landing Page, Vitrine/Busca, Detalhe do Item, Formulário de Anúncio, Meus Anúncios e Identificação — ver [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv) para o detalhamento por tela.
+Landing Page, Vitrine/Busca, Detalhe do Item, Formulário de Anúncio, Meus Anúncios e Identificação — ver [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv) para o detalhamento por tela. Todas já consomem a API real (`frontend/src/lib/api.ts`); não há mais dados mockados no código. A Landing Page também tem filtro por categoria (requisito 1.4), aplicado sobre os últimos anúncios.
+
+### Identificação de usuário (provisória)
+
+A tela de Identificação (bônus, Camada 2) ainda não tem login/JWT implementado. Como o backend exige `ownerId` em todo item, cada navegador recebe um id anônimo gerado uma vez e guardado em `localStorage` (`frontend/src/lib/currentUser.ts`) — suficiente para "Meus Anúncios" e o `POST` funcionarem de ponta a ponta sem UI de login ainda existir.
+
+### Validação do formulário de anúncio
+
+Duas camadas, redundantes de propósito:
+
+1. **Cliente** (`frontend/src/pages/AdForm.tsx`): antes de chamar a API, valida título/descrição preenchidos, preço > 0 quando não é doação, URL de imagem bem formada e contato preenchido — mostra a mensagem embaixo do campo específico, sem deixar enviar.
+2. **Servidor** (`backend/src/schemas/item.ts`, Zod): mesma validação de novo, porque a API não pode confiar que só esse formulário vai chamá-la. Se o backend rejeitar (`400`), o frontend usa o campo `issues` da resposta pra apontar o erro no campo certo — cobre os casos que a validação do cliente não pegar.
+
+### PWA
+
+Configurado com `vite-plugin-pwa` (`frontend/vite.config.ts`), estratégia `generateSW` (service worker gerado automaticamente com o Workbox, sem escrever nada na mão). O build de produção (`npm run build`) gera `dist/manifest.webmanifest` e `dist/sw.js`; **o service worker não roda no `npm run dev`**, só em build+preview (`npm run preview`) ou no deploy final.
+
+- Manifest: nome, `theme_color` (`#059669`, o mesmo verde do resto da UI), `display: standalone`, ícones em `frontend/public/pwa-*.png` (192, 512 e uma versão `maskable` com margem de segurança pro Android).
+- Ícones gerados a partir de `frontend/public/pwa-icon.svg` (um SVG próprio, não reaproveitando o favicon genérico que veio do template do Vite).
+- Testado: manifest válido, service worker registra e ativa, ícones nos tamanhos certos — via Playwright contra o build de produção servido localmente (`npm run preview`).
+- Não testado ainda: instalação real num celular físico (Android/iOS). O [PLANEJAMENTO.md](PLANEJAMENTO.md) já sinalizava esse risco — PWA no iOS é mais restrita — então vale testar em um aparelho antes do vídeo e documentar aqui qual foi validado.
 
 ## Estado atual
 
-- ✅ Backend: CRUD completo de itens (`GET`, `GET/:id`, `POST`, `DELETE`), validação de campos, persistência SQLite
-- ✅ Frontend: as 6 telas montadas com roteamento, ainda consumindo dados mockados (`frontend/src/lib/mockItems.ts`)
-- ⏳ Pendente: integrar o frontend com a API real (trocar mocks pelos `fetch` para `/items`), PWA (manifest + service worker), autenticação/identificação de usuário, deploy
+- ✅ Backend: CRUD completo de itens (`GET`, `GET/:id`, `POST`, `DELETE`), filtro por categoria e por dono, validação de campos com mensagens específicas, persistência SQLite
+- ✅ Frontend: as 6 telas integradas com a API real, incluindo filtro por categoria na Landing e na Vitrine, formulário com validação por campo, e "Meus Anúncios" com exclusão real — testado de ponta a ponta em navegador (Playwright)
+- ✅ PWA: manifest + service worker gerados e validados em build de produção
+- ⏳ Pendente: teste de instalação em celular físico, autenticação/identificação de usuário de verdade (login/JWT), deploy
 
 ## Diário de Bordo da IA
 

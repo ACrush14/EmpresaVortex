@@ -1,20 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CategoryFilter } from '../components/CategoryFilter'
 import { ItemCard } from '../components/ItemCard'
-import { mockItems } from '../lib/mockItems'
-import type { Category } from '../types/item'
+import { fetchItems } from '../lib/api'
+import type { Category, Item } from '../types/item'
 
 export function Vitrine() {
   const [category, setCategory] = useState<Category | 'Todos'>('Todos')
   const [search, setSearch] = useState('')
+  const [items, setItems] = useState<Item[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const items = useMemo(() => {
-    return mockItems.filter((item) => {
-      const matchesCategory = category === 'Todos' || item.category === category
-      const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase())
-      return matchesCategory && matchesSearch
-    })
-  }, [category, search])
+  useEffect(() => {
+    setLoading(true)
+    fetchItems(category === 'Todos' ? undefined : { category })
+      .then(setItems)
+      .finally(() => setLoading(false))
+  }, [category])
+
+  const visibleItems = useMemo(() => {
+    return items.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
+  }, [items, search])
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
@@ -30,11 +35,13 @@ export function Vitrine() {
 
       <CategoryFilter selected={category} onChange={setCategory} />
 
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="py-12 text-center text-slate-500">Carregando itens...</p>
+      ) : visibleItems.length === 0 ? (
         <p className="py-12 text-center text-slate-500">Nenhum item encontrado.</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <ItemCard key={item.id} item={item} />
           ))}
         </div>

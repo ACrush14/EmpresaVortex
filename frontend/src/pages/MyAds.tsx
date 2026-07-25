@@ -1,17 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { mockItems } from '../lib/mockItems'
-
-const CURRENT_USER_ID = 'user-1' // TODO: substituir pela identificação real (Camada 2)
+import { deleteItem, fetchItems } from '../lib/api'
+import { getCurrentOwnerId } from '../lib/currentUser'
+import type { Item } from '../types/item'
 
 export function MyAds() {
-  const [items, setItems] = useState(
-    mockItems.filter((item) => item.ownerId === CURRENT_USER_ID),
-  )
+  const [items, setItems] = useState<Item[]>([])
+  const [loading, setLoading] = useState(true)
 
-  function handleDelete(id: string) {
+  useEffect(() => {
+    fetchItems({ ownerId: getCurrentOwnerId() })
+      .then(setItems)
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleDelete(id: string) {
+    const previous = items
     setItems((current) => current.filter((item) => item.id !== id))
-    // TODO: integrar com DELETE /items/:id quando o backend estiver pronto
+
+    try {
+      await deleteItem(id)
+    } catch {
+      setItems(previous)
+    }
   }
 
   return (
@@ -26,7 +37,9 @@ export function MyAds() {
         </Link>
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="py-8 text-center text-slate-500">Carregando seus anúncios...</p>
+      ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center">
           <p className="text-slate-500">Você ainda não tem nenhum anúncio.</p>
           <Link to="/anunciar" className="mt-2 inline-block text-emerald-600 hover:underline">

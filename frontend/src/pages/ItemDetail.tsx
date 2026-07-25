@@ -1,9 +1,25 @@
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { mockItems } from '../lib/mockItems'
+import { fetchItem } from '../lib/api'
+import type { Item } from '../types/item'
 
 export function ItemDetail() {
   const { id } = useParams<{ id: string }>()
-  const item = mockItems.find((mockItem) => mockItem.id === id)
+  const [item, setItem] = useState<Item | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+    setLoading(true)
+    fetchItem(id)
+      .then(setItem)
+      .catch(() => setItem(null))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) {
+    return <p className="px-4 py-16 text-center text-slate-500">Carregando item...</p>
+  }
 
   if (!item) {
     return (

@@ -15,9 +15,9 @@ export const createItemSchema = z
   .object({
     title: z.string().trim().min(1, 'Título é obrigatório'),
     description: z.string().trim().min(1, 'Descrição é obrigatória'),
-    category: z.enum(CATEGORIES),
+    category: z.enum(CATEGORIES, { message: 'Selecione uma categoria válida' }),
     isDonation: z.boolean(),
-    price: z.number().positive().nullable().optional(),
+    price: z.number().positive('Preço precisa ser maior que zero').nullable().optional(),
     imageUrl: z.string().trim().url('URL da imagem inválida'),
     contact: z.string().trim().min(1, 'Contato é obrigatório'),
     ownerId: z.string().trim().min(1, 'ownerId é obrigatório'),

@@ -5,10 +5,13 @@ import { createItemSchema } from '../schemas/item.js'
 export const itemsRouter = Router()
 
 itemsRouter.get('/', async (req, res) => {
-  const { category } = req.query
+  const { category, ownerId } = req.query
 
   const items = await prisma.item.findMany({
-    where: typeof category === 'string' ? { category } : undefined,
+    where: {
+      ...(typeof category === 'string' ? { category } : {}),
+      ...(typeof ownerId === 'string' ? { ownerId } : {}),
+    },
     orderBy: { createdAt: 'desc' },
   })
 

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CategoryFilter } from '../components/CategoryFilter'
 import { ItemCard } from '../components/ItemCard'
-import { mockItems } from '../lib/mockItems'
+import { fetchItems } from '../lib/api'
+import type { Category, Item } from '../types/item'
 
 const stats = [
   { label: 'Itens recirculados', value: '128' },
@@ -9,6 +12,17 @@ const stats = [
 ]
 
 export function LandingPage() {
+  const [category, setCategory] = useState<Category | 'Todos'>('Todos')
+  const [items, setItems] = useState<Item[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetchItems(category === 'Todos' ? undefined : { category })
+      .then((data) => setItems(data.slice(0, 8)))
+      .finally(() => setLoading(false))
+  }, [category])
+
   return (
     <div className="flex flex-col gap-16 px-4 py-12">
       <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
@@ -49,18 +63,26 @@ export function LandingPage() {
       </section>
 
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-slate-900">Últimos anúncios</h2>
           <Link to="/vitrine" className="text-sm font-medium text-emerald-600 hover:underline">
             Ver todos
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {mockItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        <CategoryFilter selected={category} onChange={setCategory} />
+
+        {loading ? (
+          <p className="py-8 text-center text-slate-500">Carregando itens...</p>
+        ) : items.length === 0 ? (
+          <p className="py-8 text-center text-slate-500">Nenhum item nessa categoria ainda.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )
