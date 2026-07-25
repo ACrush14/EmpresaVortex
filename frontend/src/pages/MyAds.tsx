@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { deleteItem, fetchItems } from '../lib/api'
-import { getCurrentOwnerId } from '../lib/currentUser'
+import { getCurrentUser } from '../lib/currentUser'
 import type { Item } from '../types/item'
 
 export function MyAds() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
+  const currentUser = getCurrentUser()
 
   useEffect(() => {
-    fetchItems({ ownerId: getCurrentOwnerId() })
+    fetchItems({ ownerId: getCurrentUser().id })
       .then(setItems)
       .finally(() => setLoading(false))
   }, [])
@@ -28,7 +29,10 @@ export function MyAds() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Meus anúncios</h1>
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Meus anúncios</h1>
+          {currentUser.name && <p className="text-sm text-slate-500">{currentUser.name}</p>}
+        </div>
         <Link
           to="/anunciar"
           className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"

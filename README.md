@@ -106,9 +106,11 @@ Para testar o PWA (manifest + service worker, que não rodam em `npm run dev`): 
 
 Landing Page, Vitrine/Busca, Detalhe do Item, Formulário de Anúncio, Meus Anúncios e Identificação — ver [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv) para o detalhamento por tela. Todas já consomem a API real (`frontend/src/lib/api.ts`); não há mais dados mockados no código. A Landing Page também tem filtro por categoria (requisito 1.4), aplicado sobre os últimos anúncios.
 
-### Identificação de usuário (provisória)
+### Identificação de usuário (Camada 2, sem senha)
 
-A tela de Identificação (bônus, Camada 2) ainda não tem login/JWT implementado. Como o backend exige `ownerId` em todo item, cada navegador recebe um id anônimo gerado uma vez e guardado em `localStorage` (`frontend/src/lib/currentUser.ts`) — suficiente para "Meus Anúncios" e o `POST` funcionarem de ponta a ponta sem UI de login ainda existir.
+Não é login/JWT — é identificação simples, do jeito que o edital aceita como bônus nessa camada: a pessoa digita um nome em `/identificacao`, sem senha, e ele fica salvo neste navegador (`frontend/src/lib/currentUser.ts`) junto do id anônimo que já associa os itens ao dono (`ownerId`, exigido pelo backend). O Header mostra o nome quando identificado; "Sair / trocar nome" limpa nome **e** id, então a pessoa seguinte no mesmo navegador não herda os anúncios de quem saiu.
+
+Decisão consciente de manter simples: dá pra qualquer um se identificar como qualquer nome (não valida senha nem impede duplicidade) — é o suficiente pro requisito 6 (identificação, associação de anúncios, persistência de sessão), sem gastar o tempo que um login de verdade exigiria. Ver [AI_LOG.md](AI_LOG.md) pra decisão completa e por que ficou desenhado assim (módulo único, fácil de trocar por auth real depois sem mexer nas telas que o usam).
 
 ### Validação do formulário de anúncio
 
@@ -131,7 +133,8 @@ Configurado com `vite-plugin-pwa` (`frontend/vite.config.ts`), estratégia `gene
 - ✅ Backend: CRUD completo de itens (`GET`, `GET/:id`, `POST`, `DELETE`), filtro por categoria e por dono, validação de campos com mensagens específicas, persistência SQLite
 - ✅ Frontend: as 6 telas integradas com a API real, incluindo filtro por categoria na Landing e na Vitrine, formulário com validação por campo, e "Meus Anúncios" com exclusão real — testado de ponta a ponta em navegador (Playwright)
 - ✅ PWA: manifest + service worker gerados e validados em build de produção
-- ⏳ Pendente: teste de instalação em celular físico, autenticação/identificação de usuário de verdade (login/JWT), deploy
+- ✅ Identificação (Camada 2): nome simples persistido no navegador, associando anúncios ao usuário
+- ⏳ Pendente: teste de instalação em celular físico, deploy, commit do trabalho recente
 
 ## Diário de Bordo da IA
 

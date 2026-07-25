@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CATEGORIES } from '../lib/categories'
 import { ApiError, createItem } from '../lib/api'
-import { getCurrentOwnerId } from '../lib/currentUser'
+import { getCurrentUser } from '../lib/currentUser'
 import type { Category } from '../types/item'
 
 type Field = 'title' | 'description' | 'price' | 'imageUrl' | 'contact'
@@ -83,7 +83,7 @@ export function AdForm() {
         price: isDonation ? null : Number(price),
         imageUrl,
         contact,
-        ownerId: getCurrentOwnerId(),
+        ownerId: getCurrentUser().id,
       })
       navigate('/meus-anuncios')
     } catch (submitError) {

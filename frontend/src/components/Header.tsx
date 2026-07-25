@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useCurrentUser } from '../lib/currentUser'
 
 const links = [
   { to: '/', label: 'Início' },
@@ -13,6 +14,8 @@ const linkClasses = ({ isActive }: { isActive: boolean }) =>
   }`
 
 export function Header() {
+  const currentUser = useCurrentUser()
+
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -32,7 +35,7 @@ export function Header() {
           to="/identificacao"
           className="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 hover:border-emerald-500 hover:text-emerald-600"
         >
-          Identificar-se
+          {currentUser.name ?? 'Identificar-se'}
         </NavLink>
       </div>
     </header>

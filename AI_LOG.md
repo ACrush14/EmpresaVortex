@@ -75,3 +75,25 @@ Trabalho: mensagens do Zod (`backend/src/schemas/item.ts`) ficaram específicas 
 **Decisão técnica (aprendendo com o erro do driver adapter de antes):** a conversão SVG→PNG normalmente seria feita com `sharp` ou `canvas`, mas ambos frequentemente dependem de compilação nativa — o mesmo tipo de problema que já tinha travado o `better-sqlite3` nesta máquina sem Visual Studio Build Tools. Usei `@resvg/resvg-js` em vez disso: é da mesma família de pacotes Rust com binário pré-compilado (como `esbuild`/`swc`), então instalou e rodou sem exigir nenhum toolchain — mesma lição de antes, aplicada preventivamente dessa vez em vez de descoberta por tentativa e erro.
 
 **Verificação:** o service worker só roda em build de produção, não no `npm run dev` — então rodei `npm run build` + `npm run preview` e testei com Playwright contra o build real: manifest.webmanifest acessível com nome/ícones/`display: standalone` corretos, service worker registrando e chegando a `activating`, e o filtro por categoria funcionando na Landing. **Não testado:** instalação num celular físico — o [PLANEJAMENTO.md](PLANEJAMENTO.md) já apontava esse risco (PWA no iOS é mais restrita), então fica como pendência explícita no README em vez de assumida como resolvida.
+
+### Identificação de usuário (Camada 2)
+
+**Contexto:** ao perguntar "o que falta", listei a Camada 2 (identificação) como bônus ainda não iniciado. Antes de implementar, perguntei explicitamente: *"Como você sugere que seja feita a identificação?"* — pra decidir a abordagem junto antes de escrever código, não só aceitar o que a IA emplacasse primeiro.
+
+**Discussão real:** propus duas opções — nome simples sem senha (rápido, cobre o requisito do edital nessa camada) vs. JWT completo com `User`, senha com hash e rotas protegidas (mais impressionante, mas caro em tempo, e o Deploy — outro bônus pendente — já tinha sido classificado como maior custo-benefício no [PLANEJAMENTO.md](PLANEJAMENTO.md)). O candidato escolheu a versão simples, com a ressalva: *"Ela parece ser escalável se precisar adicionar funções ou adicionar código se acabar precisando"* — ou seja, queria a opção barata mas sem fechar a porta pra evoluir depois.
+
+**Como isso virou código:** `frontend/src/lib/currentUser.ts` virou o único ponto de contato com "quem é o usuário atual" — `getCurrentUser()` (nome + id) e `identify(nome)`/`signOut()`. Nenhuma tela (Header, AdForm, MyAds) sabe *como* a identidade é obtida, só chama essas funções. Se um dia isso virar login de verdade, a troca fica contida nesse arquivo: `identify()` passaria a chamar `POST /auth/login` em vez de escrever no `localStorage`, `getCurrentUser()` passaria a ler de um token/`/auth/me` em vez do `localStorage` — as telas que consomem não mudam.
+
+Pra Header (que fica montado entre navegações, ao contrário das páginas) reagir quando a identidade muda em outro lugar, usei `useSyncExternalStore` com um pub-sub mínimo (`identify`/`signOut` chamam `notify()`, que avisa os componentes inscritos).
+
+### Erro identificado e corrigido (real, não hipotético) — `useSyncExternalStore`
+
+Na primeira versão, `getCurrentUser()` devolvia um objeto novo (`{ id, name }`) a cada chamada. Como o Header usava esse objeto direto como snapshot do `useSyncExternalStore`, e esse hook exige que o snapshot seja a **mesma referência** enquanto nada mudou, cada render criava um objeto "diferente" na visão do React — resultando em loop infinito de re-render (`Maximum update depth exceeded`, visível no log do Vite: "The result of getSnapshot should be cached to avoid an infinite loop").
+
+**Como percebi:** o teste em navegador (Playwright) simplesmente travou esperando um texto que nunca apareceu; o log do `npm run dev` no terminal mostrava o erro exato e a dica da própria React ("getSnapshot should be cached").
+
+**Correção:** um objeto `cachedUser` guardado em closure, só substituído quando `id` ou `name` realmente mudam — `getSnapshot()` passa a devolver sempre a mesma referência entre chamadas idênticas.
+
+**Segundo problema, achado por raciocínio antes de rodar (não por erro em produção):** o `signOut()` original só apagava o nome, mantendo o mesmo `ownerId` no `localStorage` — ou seja, "sair" não trocava de identidade de verdade, só "desnomeava" a mesma pessoa. Corrigido pra também apagar o id, forçando um novo id anônimo na próxima leitura, exatamente o comportamento que "sair" deveria ter.
+
+**Verificação:** teste em navegador (Playwright) cobrindo o fluxo completo — visitante novo vê o formulário, `identify("Fernanda")` navega pra Meus Anúncios, revisitar `/identificacao` mostra "Você é Fernanda", um item criado nesse estado aparece em Meus Anúncios, `signOut()` volta ao formulário e o Header volta a mostrar "Identificar-se", e depois do sign out os itens da Fernanda somem de Meus Anúncios (id novo). `tsc -b` e `vite build` limpos.
