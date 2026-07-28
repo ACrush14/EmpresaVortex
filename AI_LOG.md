@@ -97,3 +97,29 @@ Na primeira versão, `getCurrentUser()` devolvia um objeto novo (`{ id, name }`)
 **Segundo problema, achado por raciocínio antes de rodar (não por erro em produção):** o `signOut()` original só apagava o nome, mantendo o mesmo `ownerId` no `localStorage` — ou seja, "sair" não trocava de identidade de verdade, só "desnomeava" a mesma pessoa. Corrigido pra também apagar o id, forçando um novo id anônimo na próxima leitura, exatamente o comportamento que "sair" deveria ter.
 
 **Verificação:** teste em navegador (Playwright) cobrindo o fluxo completo — visitante novo vê o formulário, `identify("Fernanda")` navega pra Meus Anúncios, revisitar `/identificacao` mostra "Você é Fernanda", um item criado nesse estado aparece em Meus Anúncios, `signOut()` volta ao formulário e o Header volta a mostrar "Identificar-se", e depois do sign out os itens da Fernanda somem de Meus Anúncios (id novo). `tsc -b` e `vite build` limpos.
+
+---
+
+## 2026-07-28 — Deploy real (Camada 3): Vercel + Render
+
+**Prompt real:** *"Vamos fazer o deploy no vercel para poder testar. vou abrir o vercel"*
+
+Antes de implementar, o candidato perguntou se fazia mais sentido separar backend/frontend em dois sites ou colocar tudo na Vercel, "lembrando que ele precisa obedecer as demandas específicas do PDF". Em vez de responder de memória, abri o `PS_Full_Stack.pdf` de novo e li a seção 2.2 palavra por palavra: o edital já recomenda explicitamente **API em Render/Railway/Fly.io** e **Frontend em Vercel/Netlify/GitHub Pages** — dois sites, não um. Isso resolveu a dúvida direto na fonte, e também evitou um trabalho bem maior: nosso backend é um servidor Express de vida longa com SQLite em arquivo, que não roda bem como função serverless (o modelo que a Vercel usa) sem migrar o banco pra algo remoto.
+
+### Três erros reais, em sequência, no deploy do Render
+
+Cada um só apareceu rodando de verdade (logs do Render), não foi hipótese:
+
+1. **Build não gerava `dist/`.** O primeiro deploy falhou com `Error: Cannot find module '.../dist/index.js'`. O Build Command que ficou configurado no Render não estava rodando `npm run build` (só o `npm install` padrão), então o `tsc` nunca executava. Corrigido explicitando o Build Command: `npm install && npm run build`.
+
+2. **Start Command não rodava as migrations.** Mesmo com o build certo, o Start Command estava em `npm start` (só `node dist/index.js`) — no banco novo e vazio do Render, isso teria quebrado na primeira query com "tabela não existe", já que nenhuma migration tinha rodado ali. Corrigido apontando o Start Command pra `npm run start:prod` (script que criei: `prisma migrate deploy && tsx prisma/seed.ts && node dist/index.js`).
+
+3. **O script `start:prod` só existia na minha máquina.** Mesmo depois de acertar os dois campos no painel do Render, o deploy ainda ia falhar com "missing script: start:prod" — porque eu tinha editado o `package.json` localmente mas nunca tinha commitado nem enviado pro GitHub, e o Render builda a partir do repositório remoto, não do meu disco. **Lição:** configurar o painel do serviço de hospedagem não substitui ter o código correspondente no commit que está sendo implantado — são duas coisas independentes, e é fácil esquecer a segunda depois de mexer na primeira.
+
+Pedido explícito antes de agir: *"Faça o commit, por favor"* — só commitei e enviei (`b140850`) depois dessa confirmação direta, e expliquei antes exatamente o que ia entrar (só `package.json`/`package-lock.json`, deixando de fora um `backend/dev.db` antigo sem relação).
+
+**Verificação:** depois do push, o Render disparou o redeploy sozinho (Auto-Deploy: On Commit). Confirmei via `curl` na URL de produção: `GET /health` → `200 {"status":"ok"}`, `GET /items` → os 4 itens do seed, dados reais vindos do banco em produção, não suposição.
+
+### Quarto ponto, achado por checagem própria (não por erro relatado)
+
+Depois de o backend subir, o próximo passo era apontar `VITE_API_URL` na Vercel pro Render. Antes de dar como resolvido, resolvi conferir: baixei o bundle JS que a Vercel estava servindo em produção e procurei por `localhost:3333` nele. Estava lá — ou seja, mesmo com a variável de ambiente já salva no painel da Vercel, o site ainda estava servindo o build antigo. **Motivo:** `VITE_API_URL` é lida em *build time* (o Vite substitui `import.meta.env.VITE_API_URL` por um valor literal dentro do JavaScript compilado), não em runtime — salvar a variável não muda um build que já existe, precisa de um redeploy novo pra essa variável entrar no bundle. Detalhe que não é óbvio pra quem está acostumado com variáveis de ambiente de backend (essas sim, bastam reiniciar o processo).
