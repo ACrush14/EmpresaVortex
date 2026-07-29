@@ -123,3 +123,17 @@ Pedido explícito antes de agir: *"Faça o commit, por favor"* — só commitei 
 ### Quarto ponto, achado por checagem própria (não por erro relatado)
 
 Depois de o backend subir, o próximo passo era apontar `VITE_API_URL` na Vercel pro Render. Antes de dar como resolvido, resolvi conferir: baixei o bundle JS que a Vercel estava servindo em produção e procurei por `localhost:3333` nele. Estava lá — ou seja, mesmo com a variável de ambiente já salva no painel da Vercel, o site ainda estava servindo o build antigo. **Motivo:** `VITE_API_URL` é lida em *build time* (o Vite substitui `import.meta.env.VITE_API_URL` por um valor literal dentro do JavaScript compilado), não em runtime — salvar a variável não muda um build que já existe, precisa de um redeploy novo pra essa variável entrar no bundle. Detalhe que não é óbvio pra quem está acostumado com variáveis de ambiente de backend (essas sim, bastam reiniciar o processo).
+
+---
+
+## 2026-07-29 — Painel Admin (planejamento, fora do VS Code)
+
+**Contexto:** conversa de continuação do planejamento (fora do VS Code, mesma conversa iniciada em 24/07 — ver [historico.md](historico.md)), retomada depois de a implementação já ter avançado bastante em paralelo dentro do VS Code (backend, integração, validação, PWA, identificação e deploy, todos documentados acima).
+
+**Prompt real:** *"Eu queria que tivesse um /admin no projeto no qual precisa de uma senha sendo ela '2001'. Essa senha serve para entrar na página admin e conseguir administrar todos os anúncios, então se tiver anúncio que é mal gosto ou piada, eu conseguiria deletar"*
+
+**Risco identificado antes de qualquer código existir:** o repositório é público (exigência do edital) — uma senha escrita direto no código-fonte ficaria visível para qualquer pessoa que abrisse o repo no GitHub, permitindo que qualquer um (não só a banca) deletasse qualquer anúncio.
+
+**Direção proposta, ainda não implementada:** senha como variável de ambiente no backend (`ADMIN_PASSWORD`), nunca commitada; `POST /admin/login` valida no servidor e devolve um token; ações de admin (deletar qualquer item) exigem esse token; se a variável for lida pelo Vite no frontend, nunca pode ter prefixo `VITE_`, porque isso a embutiria em texto plano no bundle JS público (mesmo mecanismo do problema do `VITE_API_URL` documentado acima, mas aplicado a um segredo em vez de uma URL — aqui o risco é maior). Registrado como Tela 7 em [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv) e seção 3.2 de [PLANEJAMENTO.md](PLANEJAMENTO.md), marcado como extra (não pontua no edital, ideia do próprio candidato para moderação).
+
+**Pendente:** implementação real do endpoint de login, middleware de autorização e da tela `/admin` no frontend.

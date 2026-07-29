@@ -37,3 +37,8 @@ Numero,Item,Descricao,Prioridade
 6.1,Campo de identificacao simples ou login,"Nome do usuario, ou login com JWT dependendo do nivel de bonus escolhido",Bonus (camada 2)
 6.2,Persistencia de sessao,"Guarda a identificacao em localStorage ou token JWT entre visitas",Bonus (camada 2)
 6.3,Associacao de anuncios ao usuario,"Cada item criado fica vinculado a quem o cadastrou, habilitando a tela 5",Bonus (camada 2)
+7,TELA: Painel Admin (Moderacao),"Rota /admin protegida por senha, para remover anuncios de mau gosto ou piadas",Extra (ideia do usuario, nao pontua no edital)
+7.1,Login com senha,"Senha vem de variavel de ambiente no backend (ADMIN_PASSWORD), nunca escrita no codigo commitado",Extra
+7.2,Lista de todos os anuncios do sistema,"Sem filtro por usuario, visao completa para moderacao",Extra
+7.3,Excluir qualquer anuncio,"Reaproveita DELETE /items/:id, mas exige token de admin valido",Extra
+7.4,Protecao de rota,"Frontend redireciona pra login se nao autenticado; backend rejeita delete sem token",Extra

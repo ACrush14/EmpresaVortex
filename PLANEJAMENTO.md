@@ -54,6 +54,12 @@ Endpoints mínimos:
 
 Detalhamento tela a tela (numeração `1, 1.1, 1.2...` = tela e seus itens/funções) está em [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv). 6 telas: Landing Page, Vitrine/Busca, Detalhe do Item, Formulário de Anúncio, Meus Anúncios, Identificação/Autenticação.
 
+## 3.2. Painel Admin (extra, ideia do usuário — não avaliado no edital)
+
+Rota `/admin` protegida por senha (`ADMIN_PASSWORD=2001`), para remover anúncios de mau gosto ou piadas. Detalhamento em REQUISITOS_TELAS.csv, tela 7.
+
+**Regra de segurança inegociável:** a senha nunca pode aparecer escrita no código commitado (o repo é público). Ela vive só como variável de ambiente no backend (`.env` local, já no `.gitignore`; secret na plataforma de deploy). Um `POST /admin/login` valida a senha no servidor e devolve um token; ações de admin (deletar qualquer item) exigem esse token. Se o front for Vite, nunca usar prefixo `VITE_` nessa variável — isso a exporia no bundle do navegador.
+
 ## 4. Escopo — obrigatório vs bônus, em camadas
 
 **Camada 0 — Obrigatório (não negociável):**

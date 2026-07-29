@@ -12,9 +12,11 @@ A nota final considera 4 eixos: qualidade/completude da entrega (Git & README), 
 
 ## Decisões já fechadas
 
-- **Frontend:** React + Vite + TypeScript, com PWA via `vite-plugin-pwa`
-- **Backend:** ainda **em aberto**. Sugestão dada: Node.js + TypeScript + Express + Prisma + SQLite (mesma linguagem do front, menos contexto para dominar em 15 dias, mais fácil de explicar no vídeo). Usuário disse que quer conseguir escrever o backend de verdade — autoria importa mais que velocidade — então essa decisão deve ser dele, ainda não confirmada.
-- **Escopo:** mínimo obrigatório 100% sólido primeiro, depois bônus em camadas priorizadas por custo-benefício: validação de campos > autenticação/identificação > deploy real > DB real/cache offline/polish visual
+- **Frontend:** React + Vite + TypeScript + Tailwind + React Router, com PWA via `vite-plugin-pwa`
+- **Backend:** Node.js + TypeScript + Express + Prisma ORM 7 (driver adapter `@prisma/adapter-libsql`, não `better-sqlite3` — esta máquina Windows não tem Visual Studio Build Tools para compilar módulos nativos) + SQLite + Zod para validação
+- **Escopo:** mínimo obrigatório 100% sólido primeiro, depois bônus em camadas priorizadas por custo-benefício: validação de campos > identificação de usuário > deploy real > DB real/cache offline/polish visual
+- **Identificação de usuário (Camada 2):** decidida como versão simples sem senha (nome em `localStorage` via `frontend/src/lib/currentUser.ts`), não JWT — desenhada para ser trocável por auth real depois sem reescrever as telas
+- **Deploy (Camada 3):** já está no ar — backend no Render, frontend na Vercel
 - **Repositório:** criado em [github.com/ACrush14/EmpresaVortex](https://github.com/ACrush14/EmpresaVortex), público, independente. Importante: a pasta do projeto (`D:\UNIFOR\Clones Github\VortexFullStack`) fica dentro da árvore de um monorepo pessoal bem maior do usuário (com arquivos pessoais sensíveis) — o `.git` deste projeto é próprio e isolado, nunca deve ser misturado com o repo pessoal externo.
 
 ## Documentos já produzidos (na raiz do repo)
@@ -43,6 +45,10 @@ Essa simulação é o motivo pelo qual existem a **Tela 3 (Detalhe do Item)** e 
 
 Ideia central repetida na conversa: **IA para decisão e velocidade, nunca para pular a compreensão** — isso é literalmente um dos 4 eixos da nota e é checado ao vivo no vídeo (minuto 3 a 5, quando o candidato abre o VS Code e explica a arquitetura).
 
+## Painel Admin (extra, ideia do usuário — não avaliado no edital)
+
+O usuário pediu uma rota `/admin` protegida por senha (`2001`) para poder deletar anúncios de mau gosto ou piada. Ponto de atenção levantado na conversa: como o repositório é **público**, a senha nunca pode ficar escrita direto no código commitado — vira variável de ambiente no backend (`ADMIN_PASSWORD`, `.env` local já no `.gitignore`, secret na plataforma de deploy). Um `POST /admin/login` valida no servidor e devolve um token; ações de admin (deletar qualquer item) exigem esse token. Se o front for Vite, a variável nunca pode ter prefixo `VITE_` (isso a exporia no bundle do navegador). Adicionado como Tela 7 no REQUISITOS_TELAS.csv e seção 3.2 do PLANEJAMENTO.md.
+
 ## Prioridades recapituladas
 
 **Obrigatório (piso mínimo):**
@@ -59,6 +65,17 @@ Ideia central repetida na conversa: **IA para decisão e velocidade, nunca para 
 5. Banco de dados real (Postgres/Mongo) — só se sobrar tempo confortável
 6. Cache offline no service worker — arriscado de demonstrar bem nos 2 min de demo do vídeo, prioridade mais baixa
 
-## Estado atual e próximo passo
+## O que aconteceu depois, no VS Code (25 a 28/07, fora desta conversa)
 
-Conversa pausada em 2026-07-24 (dia 2 do cronograma de 15 dias) para o usuário continuar no VS Code com o Claude Code. **Pendência bloqueante:** a escolha final da stack de backend ainda não foi feita — isso trava o início da implementação e deveria ser resolvido antes de seguir para código.
+Esta conversa de planejamento ficou pausada em 24/07 enquanto o candidato seguiu a implementação com o Claude Code, direto no VS Code. Resumo do que foi feito lá (detalhe completo, com prompts reais e erros corrigidos, em [AI_LOG.md](AI_LOG.md)):
+
+- **25/07:** backend implementado (Prisma + Express + Zod, CRUD completo de `/items`), frontend integrado à API real (sem dados mockados), validação de campos nos dois lados, filtro por categoria na Landing, PWA (manifest + service worker via `vite-plugin-pwa`) e identificação de usuário simples (Camada 2) — todas testadas em navegador com Playwright.
+- **28/07:** deploy real (Camada 3) — backend no Render, frontend na Vercel — incluindo três erros de configuração corrigidos em produção (build command, start command/migrations, script não commitado) e um problema sutil de `VITE_API_URL` sendo fixada em build-time.
+
+**Ainda pendente segundo a memória do projeto:** teste de instalação do PWA em celular físico (Android/iOS) nunca confirmado.
+
+## Estado atual e próximo passo (retomado em 29/07)
+
+O candidato voltou a esta conversa (fora do VS Code) para discutir uma ideia nova: um Painel Admin (ver seção acima) protegido por senha via variável de ambiente. Isso foi registrado como Tela 7 (extra) no REQUISITOS_TELAS.csv e seção 3.2 do PLANEJAMENTO.md, mas **ainda não foi implementado**.
+
+Também foi adicionada uma entrada de 29/07 no [AI_LOG.md](AI_LOG.md) real do projeto, documentando esse pedido e a decisão de segurança (senha nunca no código commitado).
