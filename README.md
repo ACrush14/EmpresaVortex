@@ -2,7 +2,7 @@
 
 Projeto do processo seletivo de estágio Full-Stack do Laboratório Vortex (UNIFOR). Plataforma onde estudantes anunciam itens (livros, calculadoras, eletrônicos, jalecos, móveis) para doação ou venda, com uma Landing Page pública e uma experiência PWA instalável no mobile.
 
-Edital completo em [PS_Full_Stack.pdf](PS_Full_Stack.pdf). Contexto de planejamento em [PLANEJAMENTO.md](PLANEJAMENTO.md), [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv) e [historico.md](historico.md).
+Edital completo em [PS_Full_Stack.pdf](PS_Full_Stack.pdf). Contexto de planejamento em [PLANEJAMENTO.md](PLANEJAMENTO.md), [REQUISITOS_TELAS.csv](REQUISITOS_TELAS.csv), [historico.md](historico.md) e [ROTEIRO_VIDEO.md](ROTEIRO_VIDEO.md).
 
 ## Deploy
 
